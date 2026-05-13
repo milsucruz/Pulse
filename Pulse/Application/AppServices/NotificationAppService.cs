@@ -1,6 +1,8 @@
 ﻿using Application.Commands;
 using Application.Interfaces;
+using Domain.Entities;
 using Microsoft.Extensions.Logging;
+using Shared.Messages;
 
 namespace Application.AppServices
 {
@@ -24,22 +26,30 @@ namespace Application.AppServices
         {
 			try
 			{
-                //Create a new notification entity
+                Notification notification = Notification.Create(
+                    recipient: command.Recipient,
+                    subject: command.Subject,
+                    body: command.Body,
+                    type: command.Type
+                );
 
-                // repository add and save changes
 
-                //routing key
+                await notificationRepository.AddAsync(notification, cancellationToken);
+                await notificationRepository.SaveChangesAsync(cancellationToken);
 
-                //the message to be published
+                var routingKey = $"notifications.{command.Type.ToString().ToLower()}.{command.Priority}";
 
-                //publisher invoke
+                var message = new NotificationMessage(
+                    notification.Id, command.Recipient, command.Subject,
+                    command.Body, command.Type, DateTime.UtcNow);
+
+                await messagePublisher.PublishAsync(message, routingKey, cancellationToken);
 
                 logger.LogInformation(
                     "Notification {NotificationId} published with routing key {RoutingKey}",
                     notification.Id, routingKey);
-                //return the notification id
 
-                return new Guid();
+                return notification.Id;
 			}
 			catch (Exception ex)
 			{
