@@ -1,62 +1,46 @@
-# .gitignore
+# Segredos — NUNCA commitar
+.env
 
-# Build
-bin/
-obj/
-out/
-
-# Visual Studio
-.vs/
-*.user
-*.suo
-*.userosscache
-*.sln.docstates
-*.userprefs
-
-# Rider
-.idea/
-*.sln.iml
-
-# VS Code
-.vscode/
-!.vscode/extensions.json
-!.vscode/settings.json
-
-# .NET
-*.swp
-project.lock.json
-project.fragment.lock.json
-artifacts/
+# Build outputs
+**/bin/
+**/obj/
 
 # NuGet
 *.nupkg
 *.snupkg
-packages/
-!**/packages/build/
-nuget.props
-!**/[Pp]ackages/build/
+**/packages/
+!**/packages/repositories.config
+.nuget/
 
-# Testes
+# Visual Studio / Rider
+.vs/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.DotSettings.user
+
+# Riders
+.idea/
+
+# Test results e cobertura
 TestResults/
 coverage/
-*.coverage
-*.coveragexml
 *.trx
+*.xml
+**/coverage.opencover.xml
 
-# Docker
-.docker/
+# Docker override com segredos locais
+docker-compose.local.yml
 
-# Secrets — nunca comitar
-appsettings.*.json
-!appsettings.Development.json
-secrets.json
-*.pfx
-*.p12
-*.pem
-.env
-!.env.example
+# Logs
+*.log
+logs/
 
 # OS
 .DS_Store
 Thumbs.db
-desktop.ini
+
+# Azure
+.azure/
