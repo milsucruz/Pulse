@@ -1,0 +1,95 @@
+{
+  "rabbit_version": "3.13.0",
+  "rabbitmq_version": "3.13.0",
+  "vhosts": [
+    { "name": "/" }
+  ],
+  "permissions": [
+    {
+      "user": "admin",
+      "vhost": "/",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    }
+  ],
+  "exchanges": [
+    {
+      "name": "notifications.topic",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "notifications.dlx",
+      "vhost": "/",
+      "type": "fanout",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    }
+  ],
+  "queues": [
+    {
+      "name": "email.queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "notifications.dlx",
+        "x-message-ttl": 300000,
+        "x-queue-type": "classic"
+      }
+    },
+    {
+      "name": "push.queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "notifications.dlx",
+        "x-message-ttl": 300000,
+        "x-queue-type": "classic"
+      }
+    },
+    {
+      "name": "notifications.dlq",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic"
+      }
+    }
+  ],
+  "bindings": [
+    {
+      "source": "notifications.topic",
+      "vhost": "/",
+      "destination": "email.queue",
+      "destination_type": "queue",
+      "routing_key": "notifications.email.#",
+      "arguments": {}
+    },
+    {
+      "source": "notifications.topic",
+      "vhost": "/",
+      "destination": "push.queue",
+      "destination_type": "queue",
+      "routing_key": "notifications.push.#",
+      "arguments": {}
+    },
+    {
+      "source": "notifications.dlx",
+      "vhost": "/",
+      "destination": "notifications.dlq",
+      "destination_type": "queue",
+      "routing_key": "",
+      "arguments": {}
+    }
+  ]
+}

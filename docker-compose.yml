@@ -1,0 +1,74 @@
+services:
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: notification-rabbitmq
+    hostname: notification-rabbitmq        # hostname fixo garante que os dados sobrevivem restart
+    ports:
+      - "5672:5672"                        # AMQP protocol
+      - "15672:15672"                      # Management UI  →  http://localhost:15672
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-admin}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-admin123}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST:-/}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+      - ./infrastructure/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
+      - ./infrastructure/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - notification-net
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: notification-sqlserver
+    ports:
+      - "1433:1433"
+    environment:
+      SA_PASSWORD: ${SQL_SA_PASSWORD:-NotifSystem@2024!}
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: Developer                 # Developer edition — gratuita para dev local
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+      - ./infrastructure/sqlserver/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"${SQL_SA_PASSWORD:-NotifSystem@2024!}\" -Q 'SELECT 1' -No -C || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s                    # SQL Server demora para inicializar
+    networks:
+      - notification-net
+
+  # Roda o script de init do banco assim que o SQL Server estiver saudável
+  sqlserver-init:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: notification-sqlserver-init
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    environment:
+      SA_PASSWORD: ${SQL_SA_PASSWORD:-NotifSystem@2024!}
+    volumes:
+      - ./infrastructure/sqlserver/init-db.sh:/init-db.sh:ro
+      - ./infrastructure/sqlserver/create-database.sql:/create-database.sql:ro
+    entrypoint: ["/bin/bash", "/init-db.sh"]
+    networks:
+      - notification-net
+    restart: "no"                          # roda uma única vez
+
+volumes:
+  rabbitmq_data:
+    name: notification_rabbitmq_data
+  sqlserver_data:
+    name: notification_sqlserver_data
+
+networks:
+  notification-net:
+    name: notification-network
+    driver: bridge

@@ -1,0 +1,15 @@
+# Override carregado automaticamente pelo docker compose em dev local.
+# NÃO commitar segredos reais aqui — este arquivo é para defaults de dev.
+# Em CI/produção, use variáveis de ambiente ou secrets do orquestrador.
+
+services:
+  rabbitmq:
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin123
+      # Habilita plugins úteis para debug local
+      RABBITMQ_PLUGINS: "rabbitmq_management rabbitmq_shovel rabbitmq_shovel_management"
+
+  sqlserver:
+    environment:
+      SA_PASSWORD: "NotifSystem@2024!"
