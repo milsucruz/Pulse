@@ -41,5 +41,6 @@ public sealed record NotificationMessage
         NotificationId != Guid.Empty &&
         !string.IsNullOrWhiteSpace(Recipient) &&
         !string.IsNullOrWhiteSpace(Subject) &&
-        !string.IsNullOrWhiteSpace(Body);
+        !string.IsNullOrWhiteSpace(Body) &&
+        !string.IsNullOrWhiteSpace(Priority);
 }

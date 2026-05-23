@@ -31,7 +31,7 @@ namespace Api.Controllers
                     request.Recipient,
                     request.Subject,
                     request.Body,
-                    request.Type,
+                    request.Type!.Value,
                     request.Priority ?? "high");
 
             Guid response = await notificationAppService.SendAsync(command,cancellationToken);

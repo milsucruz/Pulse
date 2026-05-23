@@ -81,6 +81,19 @@ public class NotificationAppServiceTests
             () => sut.SendAsync(EmailCommand(), CancellationToken.None));
     }
 
+    [Fact]
+    public async Task SendAsync_PublisherThrows_SavesFailedStatus()
+    {
+        publisher.PublishAsync(Arg.Any<NotificationMessage>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new InvalidOperationException("Broker unavailable"));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => sut.SendAsync(EmailCommand(), CancellationToken.None));
+
+        // SaveChangesAsync called twice: once for Add, once for the MarkAsFailed compensation
+        await repository.Received(2).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
     private static SendNotificationCommand EmailCommand() =>
         new("user@test.com", "Subject", "Body", NotificationTypeEnum.Email, "high");
 }

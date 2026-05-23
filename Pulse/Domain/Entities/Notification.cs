@@ -19,8 +19,20 @@ namespace Domain.Entities
         public static Notification Create(string recipient, string subject, string body, NotificationTypeEnum type)
             => new() { Recipient = recipient, Subject = subject, Body = body, Type = type };
 
-        public void MarkAsProcessed() => (Status, ProcessedAt) = (NotificationStatusEnum.Sent, DateTime.UtcNow);
-        public void MarkAsFailed(string error) => (Status, ErrorMessage) = (NotificationStatusEnum.Failed, error);
+        public void MarkAsProcessed()
+        {
+            if (Status != NotificationStatusEnum.Pending)
+                throw new InvalidOperationException($"Cannot transition to Sent from status {Status}.");
+            (Status, ProcessedAt) = (NotificationStatusEnum.Sent, DateTime.UtcNow);
+        }
+
+        public void MarkAsFailed(string error)
+        {
+            if (Status != NotificationStatusEnum.Pending)
+                throw new InvalidOperationException($"Cannot transition to Failed from status {Status}.");
+            (Status, ErrorMessage) = (NotificationStatusEnum.Failed, error);
+        }
+
         public void MarkAsDispatched() => IsDispatched = true;
     }
 }

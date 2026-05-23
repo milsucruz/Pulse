@@ -1,5 +1,6 @@
 using Infrastructure.Messaging;
 using Infrastructure.Senders;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Polly;
 using Polly.CircuitBreaker;
@@ -13,7 +14,7 @@ namespace Worker;
 
 public class EmailNotificationConsumer(
     IOptions<RabbitMqConfiguration> config,
-    EmailSender emailSender,
+    [FromKeyedServices("email")] INotificationSender sender,
     ResiliencePipelineProvider<string> pipelineProvider,
     ILogger<EmailNotificationConsumer> logger) : BackgroundService
 {
@@ -41,7 +42,7 @@ public class EmailNotificationConsumer(
         await channel.BasicQosAsync(prefetchSize: 0, prefetchCount: 1, global: false, stoppingToken);
 
         var consumer = new AsyncEventingBasicConsumer(channel);
-        consumer.ReceivedAsync += (_, ea) => HandleMessageAsync(channel, ea, stoppingToken);
+        consumer.ReceivedAsync += (_, ea) => HandleMessageAsync(channel, ea, CancellationToken.None);
 
         await channel.BasicConsumeAsync(QueueName, autoAck: false, consumer: consumer, cancellationToken: stoppingToken);
 
@@ -57,7 +58,7 @@ public class EmailNotificationConsumer(
         }
     }
 
-    private async Task HandleMessageAsync(IChannel channel, BasicDeliverEventArgs ea, CancellationToken stoppingToken)
+    private async Task HandleMessageAsync(IChannel channel, BasicDeliverEventArgs ea, CancellationToken cancellationToken)
     {
         NotificationMessage? message = null;
 
@@ -85,9 +86,9 @@ public class EmailNotificationConsumer(
 
             await pipeline.ExecuteAsync(async ct =>
             {
-                await emailSender.SendAsync(message, ct);
+                await sender.SendAsync(message, ct);
                 return true;
-            }, stoppingToken);
+            }, cancellationToken);
 
             await channel.BasicAckAsync(ea.DeliveryTag, multiple: false);
 
@@ -102,15 +103,6 @@ public class EmailNotificationConsumer(
                 PipelineKey, message.NotificationId);
 
             await channel.BasicNackAsync(ea.DeliveryTag, multiple: false, requeue: true);
-        }
-        catch (OperationCanceledException)
-        {
-            logger.LogWarning(
-                "Processing cancelled for notification {NotificationId}. Requeuing",
-                message.NotificationId);
-
-            await channel.BasicNackAsync(ea.DeliveryTag, multiple: false, requeue: true,
-                cancellationToken: CancellationToken.None);
         }
         catch (Exception ex)
         {

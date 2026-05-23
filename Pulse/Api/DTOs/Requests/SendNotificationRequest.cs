@@ -5,18 +5,19 @@ namespace Api.DTOs.Requests
 {
     public class SendNotificationRequest
     {
-        [EmailAddress]
+        [Required, EmailAddress]
         public required string Recipient { get; set; }
 
-        [MaxLength(200)]
+        [Required, MaxLength(200)]
         public required string Subject { get; set; }
 
-        [MaxLength(5000)]
+        [Required, MaxLength(5000)]
         public required string Body { get; set; }
 
         [Required]
-        public NotificationTypeEnum Type { get; set; }
+        public NotificationTypeEnum? Type { get; set; }
 
-        public string? Priority { get; set; } = "high";
+        [AllowedValues("low", "medium", "high")]
+        public string? Priority { get; set; }
     }
 }

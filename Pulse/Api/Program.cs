@@ -15,8 +15,10 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.Configure<RabbitMqConfiguration>(
-    builder.Configuration.GetSection("RabbitMq"));
+builder.Services.AddOptions<RabbitMqConfiguration>()
+    .BindConfiguration("RabbitMq")
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
 
 builder.Services.AddDbContext<NotificationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));

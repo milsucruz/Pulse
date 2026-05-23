@@ -54,4 +54,31 @@ public class NotificationTests
 
         Assert.True(notification.IsDispatched);
     }
+
+    [Fact]
+    public void MarkAsProcessed_WhenAlreadySent_Throws()
+    {
+        var notification = Notification.Create("user@test.com", "Subject", "Body", NotificationTypeEnum.Email);
+        notification.MarkAsProcessed();
+
+        Assert.Throws<InvalidOperationException>(() => notification.MarkAsProcessed());
+    }
+
+    [Fact]
+    public void MarkAsFailed_WhenAlreadyFailed_Throws()
+    {
+        var notification = Notification.Create("user@test.com", "Subject", "Body", NotificationTypeEnum.Email);
+        notification.MarkAsFailed("first error");
+
+        Assert.Throws<InvalidOperationException>(() => notification.MarkAsFailed("second error"));
+    }
+
+    [Fact]
+    public void MarkAsFailed_WhenAlreadySent_Throws()
+    {
+        var notification = Notification.Create("user@test.com", "Subject", "Body", NotificationTypeEnum.Email);
+        notification.MarkAsProcessed();
+
+        Assert.Throws<InvalidOperationException>(() => notification.MarkAsFailed("error"));
+    }
 }

@@ -9,11 +9,13 @@ var builder = Host.CreateApplicationBuilder(args);
 builder.Services.AddSerilog((_, cfg) =>
     cfg.ReadFrom.Configuration(builder.Configuration));
 
-builder.Services.Configure<RabbitMqConfiguration>(
-    builder.Configuration.GetSection("RabbitMq"));
+builder.Services.AddOptions<RabbitMqConfiguration>()
+    .BindConfiguration("RabbitMq")
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
 
-builder.Services.AddSingleton<EmailSender>();
-builder.Services.AddSingleton<PushSender>();
+builder.Services.AddKeyedSingleton<INotificationSender, EmailSender>("email");
+builder.Services.AddKeyedSingleton<INotificationSender, PushSender>("push");
 builder.Services.AddNotificationSenderPolicies();
 
 builder.Services.AddHostedService<EmailNotificationConsumer>();

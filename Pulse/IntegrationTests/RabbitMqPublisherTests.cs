@@ -39,7 +39,7 @@ public class RabbitMqPublisherTests : IAsyncLifetime
             Guid.NewGuid(), "user@test.com", "Subject", "Body",
             NotificationTypeEnum.Email, DateTime.UtcNow, "high");
 
-        using var publisher = fixture.CreatePublisher();
+        await using var publisher = fixture.CreatePublisher();
         await publisher.PublishAsync(message, RabbitMqFixture.RoutingKey, CancellationToken.None);
 
         var received = await PollQueueAsync();
@@ -59,7 +59,7 @@ public class RabbitMqPublisherTests : IAsyncLifetime
             Guid.NewGuid(), "user@test.com", "Subject", "Body",
             NotificationTypeEnum.Email, DateTime.UtcNow, "high");
 
-        using var publisher = fixture.CreatePublisher();
+        await using var publisher = fixture.CreatePublisher();
         await publisher.PublishAsync(message, RabbitMqFixture.RoutingKey, CancellationToken.None);
 
         var received = await PollQueueAsync();
