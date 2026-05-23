@@ -161,7 +161,7 @@ Dev credentials (mirrored in `docker-compose.override.yml`):
 
 ### Async / CancellationToken
 
-All I/O methods are `async Task`. `CancellationToken` is the last parameter on every public async method, always named `ct` (not `cancellationToken`).
+All I/O methods are `async Task`. `CancellationToken` is the last parameter on every public async method, always named `cancellationToken` (not `ct`).
 
 ### Logging
 
