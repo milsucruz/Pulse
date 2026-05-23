@@ -1,6 +1,6 @@
 namespace Worker
 {
-    public class Worker(ILogger<Worker> logger) : BackgroundService
+    public class EmailNotificationConsumer(ILogger<EmailNotificationConsumer> logger) : BackgroundService
     {
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
@@ -8,7 +8,7 @@ namespace Worker
             {
                 if (logger.IsEnabled(LogLevel.Information))
                 {
-                    logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
+                    logger.LogInformation("Worker running at: {time}", DateTimeOffset.UtcNow);
                 }
                 await Task.Delay(1000, stoppingToken);
             }
