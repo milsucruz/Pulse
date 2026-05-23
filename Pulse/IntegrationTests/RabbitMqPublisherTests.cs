@@ -23,6 +23,7 @@ public class RabbitMqPublisherTests : IAsyncLifetime
         connection = await fixture.CreateConnectionAsync();
         channel = await connection.CreateChannelAsync();
         await channel.BasicQosAsync(0, 1, false);
+        await channel.QueuePurgeAsync(RabbitMqFixture.TestQueue);
     }
 
     public async Task DisposeAsync()
@@ -41,7 +42,7 @@ public class RabbitMqPublisherTests : IAsyncLifetime
         using var publisher = fixture.CreatePublisher();
         await publisher.PublishAsync(message, RabbitMqFixture.RoutingKey, CancellationToken.None);
 
-        var received = await channel.BasicGetAsync(RabbitMqFixture.TestQueue, autoAck: true);
+        var received = await PollQueueAsync();
 
         Assert.NotNull(received);
         var deserialized = JsonSerializer.Deserialize<NotificationMessage>(received.Body.Span);
@@ -61,10 +62,21 @@ public class RabbitMqPublisherTests : IAsyncLifetime
         using var publisher = fixture.CreatePublisher();
         await publisher.PublishAsync(message, RabbitMqFixture.RoutingKey, CancellationToken.None);
 
-        var received = await channel.BasicGetAsync(RabbitMqFixture.TestQueue, autoAck: true);
+        var received = await PollQueueAsync();
 
         Assert.NotNull(received);
         Assert.False(string.IsNullOrEmpty(received.BasicProperties.MessageId));
         Assert.NotEqual(0, received.BasicProperties.Timestamp.UnixTime);
+    }
+
+    private async Task<BasicGetResult?> PollQueueAsync(int attempts = 10, int delayMs = 200)
+    {
+        for (var i = 0; i < attempts; i++)
+        {
+            var result = await channel.BasicGetAsync(RabbitMqFixture.TestQueue, autoAck: true);
+            if (result is not null) return result;
+            await Task.Delay(delayMs);
+        }
+        return null;
     }
 }

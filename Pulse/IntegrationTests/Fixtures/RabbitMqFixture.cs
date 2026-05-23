@@ -16,7 +16,13 @@ public class RabbitMqFixture : IAsyncLifetime
     public const string TestQueue = "test.email.queue";
     public const string RoutingKey = "notifications.email.high";
 
-    private readonly RabbitMqContainer container = new RabbitMqBuilder("rabbitmq:3.13-management").Build();
+    private const string TestUsername = "testuser";
+    private const string TestPassword = "testpass";
+
+    private readonly RabbitMqContainer container = new RabbitMqBuilder("rabbitmq:3.13-management")
+        .WithUsername(TestUsername)
+        .WithPassword(TestPassword)
+        .Build();
 
     public InfraRabbitMqConfig Configuration { get; private set; } = null!;
 
@@ -28,8 +34,8 @@ public class RabbitMqFixture : IAsyncLifetime
         {
             Host = container.Hostname,
             Port = container.GetMappedPublicPort(5672),
-            Username = "guest",
-            Password = "guest",
+            Username = TestUsername,
+            Password = TestPassword,
             VirtualHost = "/",
             ExchangeName = ExchangeName,
             DeadLetterExchange = "notifications.dlx",
