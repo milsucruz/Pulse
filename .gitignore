@@ -1,5 +1,13 @@
-# Segredos — NUNCA commitar
+# Segredos — NEVER commit
 .env
+.env.local
+.env.*.local
+appsettings.*.local.json
+*.pfx
+*.p12
+*.pem
+*.key
+*.cer
 
 # Build outputs
 **/bin/
@@ -9,7 +17,6 @@
 *.nupkg
 *.snupkg
 **/packages/
-!**/packages/repositories.config
 .nuget/
 
 # Visual Studio / Rider
@@ -21,17 +28,13 @@
 *.sln.docstates
 *.DotSettings.user
 
-# Riders
-.idea/
-
-# Test results e cobertura
+# Test results and coverage
 TestResults/
 coverage/
 *.trx
-*.xml
 **/coverage.opencover.xml
 
-# Docker override com segredos locais
+# Docker override with local settings
 docker-compose.local.yml
 
 # Logs
@@ -44,3 +47,6 @@ Thumbs.db
 
 # Azure
 .azure/
+
+# Claude
+settings.local.json
