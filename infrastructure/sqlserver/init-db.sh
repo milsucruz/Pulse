@@ -42,4 +42,4 @@ echo "🔧 Executando script de criação do banco..."
   -i /create-database.sql \
   -No -C
 
-echo "✅ Banco PulseSystem criado com sucesso."
+echo "✅ Banco PulseDB criado com sucesso."

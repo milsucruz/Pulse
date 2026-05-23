@@ -23,7 +23,7 @@ case "${1:-help}" in
     echo "  Usuário: sa  |  Senha: Pulse#Dev@2026"
     echo ""
     echo "  Connection string:"
-    echo "  Server=localhost,1433;Database=PulseSystem;User Id=sa;Password=Pulse#Dev@2026;TrustServerCertificate=True"
+    echo "  Server=localhost,1433;Database=PulseDB;User Id=sa;Password=Pulse#Dev@2026;TrustServerCertificate=True"
     ;;
 
   down)
@@ -73,7 +73,7 @@ case "${1:-help}" in
       /opt/mssql-tools18/bin/sqlcmd \
       -S localhost -U sa \
       -P "Pulse#Dev@2026" \
-      -d PulseSystem \
+      -d PulseDB \
       -No -C
     ;;
 

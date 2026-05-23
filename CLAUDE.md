@@ -130,7 +130,7 @@ SMS (`NotificationTypeEnum.Sms`) has no queue or binding defined yet.
 
 ### Database
 
-SQL Server database `PulseSystem`, schema `pulse`. `infrastructure/sqlserver/create-database.sql` runs at container init and creates:
+SQL Server database `PulseDB`, schema `pulse`. `infrastructure/sqlserver/create-database.sql` runs at container init and creates:
 
 - `pulse.Notifications` — main records; `IsDispatched` flag is a placeholder for the Outbox Pattern
 - `pulse.OutboxEntries` — schema placeholder for Projeto 03; do not use yet

@@ -1,24 +1,24 @@
 -- infra/sqlserver/create-database.sql
--- Cria o banco e o schema inicial do PulseSystem.
+-- Cria o banco e o schema inicial do PulseDB.
 -- As migrations do EF Core vão evoluir este schema — este script
 -- garante apenas que o banco exista quando a aplicação iniciar.
 
 -- ============================================================
 -- 1. Banco de dados
 -- ============================================================
-IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = 'PulseSystem')
+IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = 'PulseDB')
 BEGIN
-    CREATE DATABASE PulseSystem
+    CREATE DATABASE PulseDB
         COLLATE Latin1_General_100_CI_AS_SC_UTF8;
-    PRINT 'Database PulseSystem criado.';
+    PRINT 'Database PulseDB criado.';
 END
 ELSE
 BEGIN
-    PRINT 'Database PulseSystem já existe — pulando criação.';
+    PRINT 'Database PulseDB já existe — pulando criação.';
 END
 GO
 
-USE PulseSystem;
+USE PulseDB;
 GO
 
 -- ============================================================
