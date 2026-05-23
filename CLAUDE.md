@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Pulse is a .NET 10 async notification system (Projeto 01 de um roadmap de portfólio). It accepts notification requests via REST, persists them to SQL Server, and publishes messages to RabbitMQ for downstream processing. The Worker service is intended to consume those messages but is currently a stub.
+Pulse is a .NET 10 async notification system (Projeto 01 de um roadmap de portfólio). It accepts notification requests via REST, persists them to SQL Server, and publishes messages to RabbitMQ for downstream processing. The Worker service consumes those messages and dispatches them via pluggable sender implementations.
 
 The project will evolve into Projeto 03 (webhooks confiáveis com Outbox Pattern). Design decisions — especially abstractions in `Application` — must consider that evolution.
 
@@ -69,22 +69,21 @@ Domain → Application → Infrastructure
 Shared (referenced by Application, Api, Worker)
 ```
 
-- **Domain**: `Notification` entity with state-transition methods (`MarkAsProcessed`, `MarkAsFailed`, `MarkAsDispatched`). No external dependencies.
+- **Domain**: `Notification` entity with state-transition methods (`MarkAsProcessed`, `MarkAsFailed`, `MarkAsDispatched`). Each transition validates the current status and throws `InvalidOperationException` if the transition is illegal. No external dependencies.
 - **Application**: `NotificationAppService` orchestrates the write flow. Interfaces (`INotificationRepository`, `IMessagePublisher`) are defined here; implementations live in Infrastructure.
-- **Shared**: `NotificationMessage` record — the serialized contract that crosses the API/Worker boundary over RabbitMQ.
-- **Infrastructure**: Implements all Application interfaces. `RabbitMqPublisher` → `IMessagePublisher`. `NotificationRepository` → `INotificationRepository`. `EmailSender` and `PushSender` are stub implementations (log only — no real delivery yet). `PollyPolicies` registers resilience pipelines for both senders.
-- **Worker**: Two `BackgroundService` consumers — `EmailNotificationConsumer` (listens on `email.queue`) and `PushNotificationConsumer` (listens on `push.queue`). Each uses Polly for retry/circuit-breaker and follows the ACK/NACK conventions.
+- **Shared**: `NotificationMessage` record — the serialized contract that crosses the API/Worker boundary over RabbitMQ. `IsValid()` checks `NotificationId`, `Recipient`, `Subject`, `Body`, and `Priority`.
+- **Infrastructure**: Implements all Application interfaces. `RabbitMqPublisher` → `IMessagePublisher`. `NotificationRepository` → `INotificationRepository`. `EmailSender` and `PushSender` implement `INotificationSender` and are stub implementations (log only — no real delivery yet). `PollyPolicies` registers resilience pipelines for both senders.
+- **Worker**: Two `BackgroundService` consumers — `EmailNotificationConsumer` (listens on `email.queue`) and `PushNotificationConsumer` (listens on `push.queue`). Each injects `INotificationSender` via keyed DI (`"email"` / `"push"`), uses Polly for retry/circuit-breaker, and follows the ACK/NACK conventions.
 
 ### Request Flow
 
 `POST /api/pulse` → `PulseController` → `NotificationAppService.SendAsync`:
 1. Creates a `Notification` domain entity (status = `Pending`)
-2. Persists via `INotificationRepository`
+2. Persists via `INotificationRepository` and calls `SaveChangesAsync`
 3. Builds routing key `pulse.{type}.{priority}` (e.g. `pulse.email.high`)
 4. Publishes a `NotificationMessage` to RabbitMQ via `IMessagePublisher`
+   - If publish throws, calls `MarkAsFailed(error)` on the entity, saves again, then re-throws
 5. Returns `202 Accepted` with the new notification `Guid`
-
-`Program.cs` has no DI registrations beyond the ASP.NET Core scaffold — wiring Infrastructure implementations is the next step.
 
 ### Critical Interfaces — Do Not Change Without Strong Reason
 
@@ -109,6 +108,14 @@ public interface INotificationRepository
 
 **Never inject the concrete implementation directly into application services.** `NotificationAppService` depends on `IMessagePublisher`, not on `RabbitMqPublisher`.
 
+### RabbitMqPublisher — Thread-Safety
+
+`RabbitMqPublisher` is registered as a **singleton** and must be safe for concurrent use. Implementation details:
+
+- Connection and channel are created **lazily** on the first `PublishAsync` call — no sync-over-async in the constructor.
+- A `SemaphoreSlim(1, 1)` serializes all publish operations, including the lazy init, so concurrent requests never share the same channel simultaneously.
+- Implements `IAsyncDisposable` (not `IDisposable`); the DI container calls `DisposeAsync` on shutdown.
+
 ### RabbitMQ Topology
 
 Defined in `infrastructure/rabbitmq/definitions.json` and loaded at container startup. **Do not recreate topology in application startup code — it already exists.**
@@ -125,6 +132,8 @@ Defined in `infrastructure/rabbitmq/definitions.json` and loaded at container st
 | `pulse.dlq` | (from dlx) | — |
 
 Routing key pattern: `pulse.{type}.{priority}` — the `#` wildcard means adding new priorities or segments requires no binding changes.
+
+Valid priority values: `"low"`, `"medium"`, `"high"`. These are enforced by `[AllowedValues]` on the request DTO. The default is `"high"`.
 
 Dead-letter triggers: consumer `BasicNack(requeue: false)` or message TTL expiry. Flow: queue → `pulse.dlx` (fanout) → `pulse.dlq`.
 
@@ -144,13 +153,20 @@ Relevant indexes:
 
 ## Configuration
 
-`Pulse/Api/appsettings.Development.json` holds dev defaults:
+`Pulse/Api/appsettings.Development.json` and `Pulse/Worker/appsettings.json` hold dev defaults.
 
-- `ConnectionStrings:Default` — SQL Server connection string
-- `RabbitMq` — host, port, credentials, exchange/DLX names
-- `Serilog` — structured console logging with context enrichment
+Both hosts register configuration with startup validation:
 
-Use `IOptions<T>` for all typed configuration. Sections map to:
+```csharp
+builder.Services.AddOptions<RabbitMqConfiguration>()
+    .BindConfiguration("RabbitMq")
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+```
+
+`RabbitMqConfiguration` has `[Required, MinLength(1)]` on `Host`, `Username`, `Password`, `ExchangeName`, `DeadLetterExchange`, and `DeadLetterQueue`. A missing or empty value in any of these fails fast at startup.
+
+Configuration sections:
 - `RabbitMq` → `RabbitMqConfiguration`
 - `ConnectionStrings:Default` → EF Core connection string
 
@@ -163,6 +179,8 @@ Dev credentials (mirrored in `docker-compose.override.yml`):
 ### Async / CancellationToken
 
 All I/O methods are `async Task`. `CancellationToken` is the last parameter on every public async method, always named `cancellationToken` (not `ct`).
+
+Exception: the `IMessagePublisher` interface uses `ct` by convention — do not rename it there.
 
 ### Logging
 
@@ -191,6 +209,21 @@ Permanent failure       → BasicNack(requeue: false)  — goes to DLQ
 BrokenCircuitException  → BasicNack(requeue: true)   — circuit open, retry later
 ```
 
+Consumer handlers receive `CancellationToken.None` (not `stoppingToken`) so that in-flight messages complete cleanly during graceful shutdown instead of being requeued spuriously.
+
+### Domain State Transitions
+
+`Notification` only transitions from `Pending`. Calling `MarkAsProcessed()` or `MarkAsFailed()` on a notification already in `Sent` or `Failed` state throws `InvalidOperationException`. Always check state before transitioning.
+
+### Input Validation
+
+`SendNotificationRequest` enforces:
+- `Type`: `NotificationTypeEnum?` with `[Required]` — omitting the field returns 400 (prevents silent default to `None = 0`)
+- `Priority`: `[AllowedValues("low", "medium", "high")]` — any other value returns 400
+- `Recipient`: `[Required, EmailAddress]`
+- `Subject`: `[Required, MaxLength(200)]`
+- `Body`: `[Required, MaxLength(5000)]`
+
 ### Dates
 
 Always `DateTime.UtcNow` — never `DateTime.Now`. The database stores UTC. Columns are `DATETIME2`, mapped to `DateTime` in EF Core.
@@ -203,6 +236,16 @@ Defined in `Infrastructure/Resilience/PollyPolicies.cs`. Registered via `AddNoti
 |---|---|---|---|---|
 | `email-sender` | 3x | Exponential + jitter from 2s | 50% failures in 30s, break 60s | 10s |
 | `push-sender` | 3x | Exponential + jitter from 2s | 50% failures in 30s, break 60s | 10s |
+
+## DI Registration Conventions
+
+- `IMessagePublisher` → `RabbitMqPublisher` — **Singleton** (manages a single AMQP connection, thread-safe via semaphore)
+- `INotificationRepository` → `NotificationRepository` — **Scoped** (per HTTP request)
+- `INotificationAppService` → `NotificationAppService` — **Scoped**
+- `INotificationSender` for email → `EmailSender` — **Keyed Singleton** (`"email"`)
+- `INotificationSender` for push → `PushSender` — **Keyed Singleton** (`"push"`)
+
+Never inject `EmailSender` or `PushSender` directly — always use `[FromKeyedServices("email")]` / `[FromKeyedServices("push")]` with `INotificationSender`.
 
 ## Architectural Decisions (ADRs)
 
