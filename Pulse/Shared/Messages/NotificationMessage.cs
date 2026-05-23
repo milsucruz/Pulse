@@ -21,7 +21,7 @@ public sealed record NotificationMessage
         string body,
         NotificationTypeEnum type,
         DateTime createdAt,
-        string priority = "high",
+        string priority,
         int retryCount = 0)
     {
         NotificationId = notificationId;

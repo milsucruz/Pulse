@@ -36,7 +36,7 @@ namespace Api.Controllers
 
             Guid response = await notificationAppService.SendAsync(command,cancellationToken);
 
-            return Accepted(response);
+            return Accepted(new SendNotificationResponse { NotificationId = response });
         }
     }
 }

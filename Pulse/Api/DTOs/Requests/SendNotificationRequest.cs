@@ -5,14 +5,14 @@ namespace Api.DTOs.Requests
 {
     public class SendNotificationRequest
     {
-        [Required, EmailAddress]
-        public string Recipient { get; set; }
+        [EmailAddress]
+        public required string Recipient { get; set; }
 
-        [Required, MaxLength(200)]
-        public string Subject { get; set; }
+        [MaxLength(200)]
+        public required string Subject { get; set; }
 
-        [Required, MaxLength(5000)]
-        public string Body { get; set; }
+        [MaxLength(5000)]
+        public required string Body { get; set; }
 
         [Required]
         public NotificationTypeEnum Type { get; set; }

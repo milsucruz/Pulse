@@ -41,7 +41,7 @@ namespace Application.AppServices
 
                 var message = new NotificationMessage(
                     notification.Id, command.Recipient, command.Subject,
-                    command.Body, command.Type, DateTime.UtcNow);
+                    command.Body, command.Type, DateTime.UtcNow, command.Priority);
 
                 await messagePublisher.PublishAsync(message, routingKey, cancellationToken);
 
