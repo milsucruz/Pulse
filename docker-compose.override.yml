@@ -12,4 +12,4 @@ services:
 
   sqlserver:
     environment:
-      SA_PASSWORD: "NotifSystem@2024!"
+      SA_PASSWORD: "Pulse#Dev@2026"

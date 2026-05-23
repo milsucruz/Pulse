@@ -8,10 +8,15 @@ appsettings.*.local.json
 *.pem
 *.key
 *.cer
+# HTTP client environment files (Visual Studio / JetBrains HTTP Client)
+**/*.http.env.json
+**/http-client.env.json
+**/http-client.private.env.json
 
 # Build outputs
 **/bin/
 **/obj/
+publish/
 
 # NuGet
 *.nupkg
@@ -44,6 +49,7 @@ logs/
 # OS
 .DS_Store
 Thumbs.db
+*.orig
 
 # Azure
 .azure/

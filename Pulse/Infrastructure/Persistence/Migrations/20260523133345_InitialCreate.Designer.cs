@@ -20,7 +20,7 @@ namespace Infrastructure.Persistence.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasDefaultSchema("notif")
+                .HasDefaultSchema("pulse")
                 .HasAnnotation("ProductVersion", "10.0.8")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
@@ -80,7 +80,7 @@ namespace Infrastructure.Persistence.Migrations
                     b.HasIndex("Status", "CreatedAt")
                         .HasDatabaseName("IX_Notifications_Status_CreatedAt");
 
-                    b.ToTable("Notifications", "notif");
+                    b.ToTable("Notifications", "pulse");
                 });
 #pragma warning restore 612, 618
         }

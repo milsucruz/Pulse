@@ -5,7 +5,7 @@
 set -e
 
 COMPOSE_FILE="docker-compose.yml"
-PROJECT_NAME="notification"
+PROJECT_NAME="pulse"
 
 case "${1:-help}" in
 
@@ -20,10 +20,10 @@ case "${1:-help}" in
     echo "  Usuário: admin  |  Senha: admin123"
     echo ""
     echo "  SQL Server → localhost:1433"
-    echo "  Usuário: sa  |  Senha: NotifSystem@2024!"
+    echo "  Usuário: sa  |  Senha: Pulse#Dev@2026"
     echo ""
     echo "  Connection string:"
-    echo "  Server=localhost,1433;Database=NotificationSystem;User Id=sa;Password=NotifSystem@2024!;TrustServerCertificate=True"
+    echo "  Server=localhost,1433;Database=PulseSystem;User Id=sa;Password=Pulse#Dev@2026;TrustServerCertificate=True"
     ;;
 
   down)
@@ -60,7 +60,7 @@ case "${1:-help}" in
   rabbit)
     echo "🐰 Abrindo RabbitMQ Management UI..."
     # Verifica se o serviço está healthy antes de abrir
-    if docker inspect notification-rabbitmq --format='{{.State.Health.Status}}' 2>/dev/null | grep -q "healthy"; then
+    if docker inspect pulse-rabbitmq --format='{{.State.Health.Status}}' 2>/dev/null | grep -q "healthy"; then
       open "http://localhost:15672" 2>/dev/null || xdg-open "http://localhost:15672" 2>/dev/null || echo "Abra: http://localhost:15672"
     else
       echo "⚠️  RabbitMQ ainda não está healthy. Aguarde e tente novamente."
@@ -69,11 +69,11 @@ case "${1:-help}" in
 
   sql)
     echo "🗄️  Conectando ao SQL Server via sqlcmd..."
-    docker exec -it notification-sqlserver \
+    docker exec -it pulse-sqlserver \
       /opt/mssql-tools18/bin/sqlcmd \
       -S localhost -U sa \
-      -P "NotifSystem@2024!" \
-      -d NotificationSystem \
+      -P "Pulse#Dev@2026" \
+      -d PulseSystem \
       -No -C
     ;;
 

@@ -78,7 +78,7 @@ Shared (referenced by Application, Api, Worker)
 `POST /api/pulse` → `PulseController` → `NotificationAppService.SendAsync`:
 1. Creates a `Notification` domain entity (status = `Pending`)
 2. Persists via `INotificationRepository`
-3. Builds routing key `notifications.{type}.{priority}` (e.g. `notifications.email.high`)
+3. Builds routing key `pulse.{type}.{priority}` (e.g. `pulse.email.high`)
 4. Publishes a `NotificationMessage` to RabbitMQ via `IMessagePublisher`
 5. Returns `202 Accepted` with the new notification `Guid`
 
@@ -113,27 +113,27 @@ Defined in `infrastructure/rabbitmq/definitions.json` and loaded at container st
 
 | Exchange | Type | Purpose |
 |---|---|---|
-| `notifications.topic` | topic | Main exchange; routes by type+priority |
-| `notifications.dlx` | fanout | Dead-letter exchange |
+| `pulse.topic` | topic | Main exchange; routes by type+priority |
+| `pulse.dlx` | fanout | Dead-letter exchange |
 
 | Queue | Binding Key | TTL |
 |---|---|---|
-| `email.queue` | `notifications.email.#` | 5 min |
-| `push.queue` | `notifications.push.#` | 5 min |
-| `notifications.dlq` | (from dlx) | — |
+| `email.queue` | `pulse.email.#` | 5 min |
+| `push.queue` | `pulse.push.#` | 5 min |
+| `pulse.dlq` | (from dlx) | — |
 
-Routing key pattern: `notifications.{type}.{priority}` — the `#` wildcard means adding new priorities or segments requires no binding changes.
+Routing key pattern: `pulse.{type}.{priority}` — the `#` wildcard means adding new priorities or segments requires no binding changes.
 
-Dead-letter triggers: consumer `BasicNack(requeue: false)` or message TTL expiry. Flow: queue → `notifications.dlx` (fanout) → `notifications.dlq`.
+Dead-letter triggers: consumer `BasicNack(requeue: false)` or message TTL expiry. Flow: queue → `pulse.dlx` (fanout) → `pulse.dlq`.
 
 SMS (`NotificationTypeEnum.Sms`) has no queue or binding defined yet.
 
 ### Database
 
-SQL Server database `NotificationSystem`, schema `notif`. `infrastructure/sqlserver/create-database.sql` runs at container init and creates:
+SQL Server database `PulseSystem`, schema `pulse`. `infrastructure/sqlserver/create-database.sql` runs at container init and creates:
 
-- `notif.Notifications` — main records; `IsDispatched` flag is a placeholder for the Outbox Pattern
-- `notif.OutboxEntries` — schema placeholder for Projeto 03; do not use yet
+- `pulse.Notifications` — main records; `IsDispatched` flag is a placeholder for the Outbox Pattern
+- `pulse.OutboxEntries` — schema placeholder for Projeto 03; do not use yet
 
 Relevant indexes:
 - `IX_Notifications_Status_CreatedAt` — worker queries by status
@@ -155,7 +155,7 @@ Use `IOptions<T>` for all typed configuration. Sections map to:
 
 Dev credentials (mirrored in `docker-compose.override.yml`):
 - RabbitMQ: `admin` / `admin123` at `localhost:15672`
-- SQL Server: `sa` / `NotifSystem@2024!` at `localhost,1433`
+- SQL Server: `sa` / `Pulse#Dev@2026` at `localhost,1433`
 
 ## Code Conventions
 
@@ -216,7 +216,7 @@ Define policies centrally in `Infrastructure/Resilience/PollyPolicies.cs`. Regis
 Already prepared in this project:
 - `IMessagePublisher` in Application — swap implementation without touching consumers
 - `IsDispatched` on `Notification` entity — flag for the dispatch job
-- `notif.OutboxEntries` table in schema — awaiting EF Core migration
+- `pulse.OutboxEntries` table in schema — awaiting EF Core migration
 - Filtered index `IX_Notifications_IsDispatched` — dispatch job performance
 
 What changes in Projeto 03:
@@ -250,8 +250,8 @@ Required GitHub secrets: `AZURE_CREDENTIALS`, `ACR_NAME`, `RESOURCE_GROUP`.
 | Resource | Config |
 |---|---|
 | Container Apps Env | Consumption plan — free up to 180k vCPU-s/month |
-| `notification-api` | min replicas: 0 (scale to zero) |
-| `notification-worker` | min replicas: 1 (always up to consume) |
+| `pulse-api` | min replicas: 0 (scale to zero) |
+| `pulse-worker` | min replicas: 1 (always up to consume) |
 | RabbitMQ | CloudAMQP — Little Lemur plan (free) |
 | SQL Server | Azure SQL serverless (free tier) |
 

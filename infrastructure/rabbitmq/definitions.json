@@ -4,6 +4,14 @@
   "vhosts": [
     { "name": "/" }
   ],
+  "users": [
+    {
+      "name": "admin",
+      "password_hash": "kLPC0eFaSEwLm6FprL3BaXiuKTlJ4LD4ljrCeYNz729szFfc",
+      "hashing_algorithm": "rabbit_password_hashing_sha256",
+      "tags": "administrator"
+    }
+  ],
   "permissions": [
     {
       "user": "admin",
@@ -15,7 +23,7 @@
   ],
   "exchanges": [
     {
-      "name": "notifications.topic",
+      "name": "pulse.topic",
       "vhost": "/",
       "type": "topic",
       "durable": true,
@@ -24,7 +32,7 @@
       "arguments": {}
     },
     {
-      "name": "notifications.dlx",
+      "name": "pulse.dlx",
       "vhost": "/",
       "type": "fanout",
       "durable": true,
@@ -40,7 +48,7 @@
       "durable": true,
       "auto_delete": false,
       "arguments": {
-        "x-dead-letter-exchange": "notifications.dlx",
+        "x-dead-letter-exchange": "pulse.dlx",
         "x-message-ttl": 300000,
         "x-queue-type": "classic"
       }
@@ -51,13 +59,13 @@
       "durable": true,
       "auto_delete": false,
       "arguments": {
-        "x-dead-letter-exchange": "notifications.dlx",
+        "x-dead-letter-exchange": "pulse.dlx",
         "x-message-ttl": 300000,
         "x-queue-type": "classic"
       }
     },
     {
-      "name": "notifications.dlq",
+      "name": "pulse.dlq",
       "vhost": "/",
       "durable": true,
       "auto_delete": false,
@@ -68,25 +76,25 @@
   ],
   "bindings": [
     {
-      "source": "notifications.topic",
+      "source": "pulse.topic",
       "vhost": "/",
       "destination": "email.queue",
       "destination_type": "queue",
-      "routing_key": "notifications.email.#",
+      "routing_key": "pulse.email.#",
       "arguments": {}
     },
     {
-      "source": "notifications.topic",
+      "source": "pulse.topic",
       "vhost": "/",
       "destination": "push.queue",
       "destination_type": "queue",
-      "routing_key": "notifications.push.#",
+      "routing_key": "pulse.push.#",
       "arguments": {}
     },
     {
-      "source": "notifications.dlx",
+      "source": "pulse.dlx",
       "vhost": "/",
-      "destination": "notifications.dlq",
+      "destination": "pulse.dlq",
       "destination_type": "queue",
       "routing_key": "",
       "arguments": {}

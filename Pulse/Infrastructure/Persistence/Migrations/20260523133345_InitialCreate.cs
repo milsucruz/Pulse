@@ -12,11 +12,11 @@ namespace Infrastructure.Persistence.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.EnsureSchema(
-                name: "notif");
+                name: "pulse");
 
             migrationBuilder.CreateTable(
                 name: "Notifications",
-                schema: "notif",
+                schema: "pulse",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
@@ -37,14 +37,14 @@ namespace Infrastructure.Persistence.Migrations
 
             migrationBuilder.CreateIndex(
                 name: "IX_Notifications_IsDispatched",
-                schema: "notif",
+                schema: "pulse",
                 table: "Notifications",
                 column: "IsDispatched",
                 filter: "[IsDispatched] = 0");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Notifications_Status_CreatedAt",
-                schema: "notif",
+                schema: "pulse",
                 table: "Notifications",
                 columns: new[] { "Status", "CreatedAt" });
         }
@@ -54,7 +54,7 @@ namespace Infrastructure.Persistence.Migrations
         {
             migrationBuilder.DropTable(
                 name: "Notifications",
-                schema: "notif");
+                schema: "pulse");
         }
     }
 }

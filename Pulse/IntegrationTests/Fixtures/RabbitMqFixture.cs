@@ -12,9 +12,9 @@ public class RabbitMqCollection : ICollectionFixture<RabbitMqFixture> { }
 
 public class RabbitMqFixture : IAsyncLifetime
 {
-    public const string ExchangeName = "notifications.topic";
+    public const string ExchangeName = "pulse.topic";
     public const string TestQueue = "test.email.queue";
-    public const string RoutingKey = "notifications.email.high";
+    public const string RoutingKey = "pulse.email.high";
 
     private const string TestUsername = "testuser";
     private const string TestPassword = "testpass";
@@ -38,8 +38,8 @@ public class RabbitMqFixture : IAsyncLifetime
             Password = TestPassword,
             VirtualHost = "/",
             ExchangeName = ExchangeName,
-            DeadLetterExchange = "notifications.dlx",
-            DeadLetterQueue = "notifications.dlq"
+            DeadLetterExchange = "pulse.dlx",
+            DeadLetterQueue = "pulse.dlq"
         };
 
         await using var connection = await CreateConnectionAsync();
@@ -47,7 +47,7 @@ public class RabbitMqFixture : IAsyncLifetime
 
         await channel.ExchangeDeclareAsync(ExchangeName, ExchangeType.Topic, durable: true);
         await channel.QueueDeclareAsync(TestQueue, durable: true, exclusive: false, autoDelete: false);
-        await channel.QueueBindAsync(TestQueue, ExchangeName, "notifications.email.#");
+        await channel.QueueBindAsync(TestQueue, ExchangeName, "pulse.email.#");
     }
 
     public RabbitMqPublisher CreatePublisher() =>

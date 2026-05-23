@@ -37,7 +37,7 @@ namespace Application.AppServices
                 await notificationRepository.AddAsync(notification, cancellationToken);
                 await notificationRepository.SaveChangesAsync(cancellationToken);
 
-                var routingKey = $"notifications.{command.Type.ToString().ToLower()}.{command.Priority}";
+                var routingKey = $"pulse.{command.Type.ToString().ToLower()}.{command.Priority}";
 
                 var message = new NotificationMessage(
                     notification.Id, command.Recipient, command.Subject,

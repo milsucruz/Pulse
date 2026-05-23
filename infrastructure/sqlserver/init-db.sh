@@ -7,7 +7,7 @@ set -e
 
 HOST="sqlserver"
 PORT="1433"
-SA_PASSWORD="${SA_PASSWORD:-NotifSystem@2024!}"
+SA_PASSWORD="${SA_PASSWORD:-Pulse#Dev@2026}"
 MAX_RETRIES=30
 RETRY_INTERVAL=5
 
@@ -42,4 +42,4 @@ echo "🔧 Executando script de criação do banco..."
   -i /create-database.sql \
   -No -C
 
-echo "✅ Banco NotificationSystem criado com sucesso."
+echo "✅ Banco PulseSystem criado com sucesso."

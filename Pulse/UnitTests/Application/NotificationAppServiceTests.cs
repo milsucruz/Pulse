@@ -44,10 +44,10 @@ public class NotificationAppServiceTests
     }
 
     [Theory]
-    [InlineData(NotificationTypeEnum.Email, "high",  "notifications.email.high")]
-    [InlineData(NotificationTypeEnum.Email, "low",   "notifications.email.low")]
-    [InlineData(NotificationTypeEnum.Push,  "high",  "notifications.push.high")]
-    [InlineData(NotificationTypeEnum.Push,  "medium","notifications.push.medium")]
+    [InlineData(NotificationTypeEnum.Email, "high",  "pulse.email.high")]
+    [InlineData(NotificationTypeEnum.Email, "low",   "pulse.email.low")]
+    [InlineData(NotificationTypeEnum.Push,  "high",  "pulse.push.high")]
+    [InlineData(NotificationTypeEnum.Push,  "medium","pulse.push.medium")]
     public async Task SendAsync_BuildsCorrectRoutingKey(
         NotificationTypeEnum type, string priority, string expectedKey)
     {

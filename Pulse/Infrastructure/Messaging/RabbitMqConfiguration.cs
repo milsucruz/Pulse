@@ -7,8 +7,8 @@ namespace Infrastructure.Messaging
         public string Username { get; set; } = "guest";
         public string Password { get; set; } = "guest";
         public string VirtualHost { get; set; } = "/";
-        public string ExchangeName { get; set; } = "notifications.topic";
-        public string DeadLetterExchange { get; set; } = "notifications.dlx";
-        public string DeadLetterQueue { get; set; } = "notifications.dlq";
+        public string ExchangeName { get; set; } = "pulse.topic";
+        public string DeadLetterExchange { get; set; } = "pulse.dlx";
+        public string DeadLetterQueue { get; set; } = "pulse.dlq";
     }
 }

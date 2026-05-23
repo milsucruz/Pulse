@@ -2,8 +2,8 @@ services:
 
   rabbitmq:
     image: rabbitmq:3.13-management
-    container_name: notification-rabbitmq
-    hostname: notification-rabbitmq        # hostname fixo garante que os dados sobrevivem restart
+    container_name: pulse-rabbitmq
+    hostname: pulse-rabbitmq        # Fix hostname to ensure data persistence across restarts.
     ports:
       - "5672:5672"                        # AMQP protocol
       - "15672:15672"                      # Management UI  →  http://localhost:15672
@@ -22,53 +22,53 @@ services:
       retries: 5
       start_period: 30s
     networks:
-      - notification-net
+      - pulse-net
 
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: notification-sqlserver
+    container_name: pulse-sqlserver
     ports:
       - "1433:1433"
     environment:
-      SA_PASSWORD: ${SQL_SA_PASSWORD:-NotifSystem@2024!}
+      SA_PASSWORD: ${SQL_SA_PASSWORD:-Pulse#Dev@2026}
       ACCEPT_EULA: "Y"
-      MSSQL_PID: Developer                 # Developer edition — gratuita para dev local
+      MSSQL_PID: Developer                 # Developer edition
     volumes:
       - sqlserver_data:/var/opt/mssql
       - ./infrastructure/sqlserver/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"${SQL_SA_PASSWORD:-NotifSystem@2024!}\" -Q 'SELECT 1' -No -C || exit 1"]
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"${SQL_SA_PASSWORD:-Pulse#Dev@2026}\" -Q 'SELECT 1' -No -C || exit 1"]
       interval: 15s
       timeout: 10s
       retries: 10
-      start_period: 60s                    # SQL Server demora para inicializar
+      start_period: 60s                    # SQL Server takes time to initialize.
     networks:
-      - notification-net
+      - pulse-net
 
-  # Roda o script de init do banco assim que o SQL Server estiver saudável
+  # Start the database initialization script once SQL Server is healthy.
   sqlserver-init:
     image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: notification-sqlserver-init
+    container_name: pulse-sqlserver-init
     depends_on:
       sqlserver:
         condition: service_healthy
     environment:
-      SA_PASSWORD: ${SQL_SA_PASSWORD:-NotifSystem@2024!}
+      SA_PASSWORD: ${SQL_SA_PASSWORD:-Pulse#Dev@2026}
     volumes:
       - ./infrastructure/sqlserver/init-db.sh:/init-db.sh:ro
       - ./infrastructure/sqlserver/create-database.sql:/create-database.sql:ro
     entrypoint: ["/bin/bash", "/init-db.sh"]
     networks:
-      - notification-net
-    restart: "no"                          # roda uma única vez
+      - pulse-net
+    restart: "no"                          # Start only one time to initialize the database.
 
 volumes:
   rabbitmq_data:
-    name: notification_rabbitmq_data
+    name: pulse_rabbitmq_data
   sqlserver_data:
-    name: notification_sqlserver_data
+    name: pulse_sqlserver_data
 
 networks:
-  notification-net:
-    name: notification-network
+  pulse-net:
+    name: pulse-network
     driver: bridge

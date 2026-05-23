@@ -10,7 +10,7 @@ public class NotificationDbContext(DbContextOptions<NotificationDbContext> optio
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.HasDefaultSchema("notif");
+        modelBuilder.HasDefaultSchema("pulse");
 
         modelBuilder.Entity<Notification>(entity =>
         {
@@ -65,9 +65,12 @@ public class NotificationDbContextFactory : IDesignTimeDbContextFactory<Notifica
 {
     public NotificationDbContext CreateDbContext(string[] args)
     {
+        var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__Default")
+            ?? throw new InvalidOperationException(
+                "Set the ConnectionStrings__Default environment variable before running EF migrations.");
+
         var options = new DbContextOptionsBuilder<NotificationDbContext>()
-            .UseSqlServer(
-                "Server=localhost,1433;Database=NotificationSystem;User Id=sa;Password=NotifSystem@2024!;TrustServerCertificate=True;MultipleActiveResultSets=true")
+            .UseSqlServer(connectionString)
             .Options;
 
         return new NotificationDbContext(options);
