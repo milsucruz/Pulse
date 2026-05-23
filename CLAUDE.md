@@ -30,6 +30,8 @@ The project will evolve into Projeto 03 (webhooks confiáveis com Outbox Pattern
 
 ### Infrastructure (Docker)
 
+> **Windows gotcha**: if RabbitMQ is installed locally as a Windows service, it competes with the Docker container on port 5672 and causes `ACCESS_REFUSED` errors. Disable it once: `Stop-Service RabbitMQ; Set-Service RabbitMQ -StartupType Disabled` (Admin PowerShell required).
+
 ```bash
 ./scripts/dev.sh up              # Start SQL Server + RabbitMQ (waits for healthchecks)
 ./scripts/dev.sh down            # Stop containers, preserve volumes
@@ -70,8 +72,8 @@ Shared (referenced by Application, Api, Worker)
 - **Domain**: `Notification` entity with state-transition methods (`MarkAsProcessed`, `MarkAsFailed`, `MarkAsDispatched`). No external dependencies.
 - **Application**: `NotificationAppService` orchestrates the write flow. Interfaces (`INotificationRepository`, `IMessagePublisher`) are defined here; implementations live in Infrastructure.
 - **Shared**: `NotificationMessage` record — the serialized contract that crosses the API/Worker boundary over RabbitMQ.
-- **Infrastructure**: Placeholder only (`Class1.cs`). Concrete implementations of Application interfaces not yet written.
-- **Worker**: Stub `BackgroundService`. RabbitMQ consumer logic not yet written.
+- **Infrastructure**: Implements all Application interfaces. `RabbitMqPublisher` → `IMessagePublisher`. `NotificationRepository` → `INotificationRepository`. `EmailSender` and `PushSender` are stub implementations (log only — no real delivery yet). `PollyPolicies` registers resilience pipelines for both senders.
+- **Worker**: Two `BackgroundService` consumers — `EmailNotificationConsumer` (listens on `email.queue`) and `PushNotificationConsumer` (listens on `push.queue`). Each uses Polly for retry/circuit-breaker and follows the ACK/NACK conventions.
 
 ### Request Flow
 
@@ -130,16 +132,15 @@ SMS (`NotificationTypeEnum.Sms`) has no queue or binding defined yet.
 
 ### Database
 
-SQL Server database `PulseDB`, schema `pulse`. `infrastructure/sqlserver/create-database.sql` runs at container init and creates:
+SQL Server database `PulseDB`, schema `pulse`. `infrastructure/sqlserver/create-database.sql` runs at container init and **only creates the database and the `pulse` schema** — it does not create any tables. EF Core migrations own all table DDL; run `dotnet ef database update --project Pulse/Infrastructure` before starting the app on a fresh database.
 
+Tables managed by EF migrations:
 - `pulse.Notifications` — main records; `IsDispatched` flag is a placeholder for the Outbox Pattern
 - `pulse.OutboxEntries` — schema placeholder for Projeto 03; do not use yet
 
 Relevant indexes:
 - `IX_Notifications_Status_CreatedAt` — worker queries by status
 - `IX_Notifications_IsDispatched` (filtered where `= 0`) — outbox dispatch job
-
-EF Core migrations will own schema evolution; the init SQL only ensures the DB exists before migrations run.
 
 ## Configuration
 
@@ -194,9 +195,9 @@ BrokenCircuitException  → BasicNack(requeue: true)   — circuit open, retry l
 
 Always `DateTime.UtcNow` — never `DateTime.Now`. The database stores UTC. Columns are `DATETIME2`, mapped to `DateTime` in EF Core.
 
-## Polly Resilience Policies (planned — Infrastructure not yet implemented)
+## Polly Resilience Policies
 
-Define policies centrally in `Infrastructure/Resilience/PollyPolicies.cs`. Register in DI with `AddResiliencePipeline<string, bool>` keyed by sender name. Never define policies inline in consumers.
+Defined in `Infrastructure/Resilience/PollyPolicies.cs`. Registered via `AddNotificationSenderPolicies()` extension method, keyed by sender name (`AddResiliencePipeline<string, bool>`). Never define policies inline in consumers.
 
 | Pipeline | Retry | Backoff | Circuit Breaker | Timeout |
 |---|---|---|---|---|
