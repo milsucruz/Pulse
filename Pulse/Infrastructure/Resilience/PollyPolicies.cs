@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Polly;
 using Polly.CircuitBreaker;
 using Polly.Retry;
+using System.IO;
 
 namespace Infrastructure.Resilience;
 
@@ -25,7 +26,11 @@ public static class PollyPolicies
                     BackoffType = DelayBackoffType.Exponential,
                     Delay = TimeSpan.FromSeconds(2),
                     UseJitter = true,
-                    ShouldHandle = new PredicateBuilder<bool>().Handle<Exception>()
+                    ShouldHandle = new PredicateBuilder<bool>()
+                        .Handle<HttpRequestException>()
+                        .Handle<TimeoutException>()
+                        .Handle<TaskCanceledException>()
+                        .Handle<IOException>()
                 })
                 .AddCircuitBreaker(new CircuitBreakerStrategyOptions<bool>
                 {
@@ -33,7 +38,11 @@ public static class PollyPolicies
                     SamplingDuration = TimeSpan.FromSeconds(30),
                     BreakDuration = TimeSpan.FromSeconds(60),
                     MinimumThroughput = 5,
-                    ShouldHandle = new PredicateBuilder<bool>().Handle<Exception>()
+                    ShouldHandle = new PredicateBuilder<bool>()
+                        .Handle<HttpRequestException>()
+                        .Handle<TimeoutException>()
+                        .Handle<TaskCanceledException>()
+                        .Handle<IOException>()
                 })
                 .AddTimeout(TimeSpan.FromSeconds(10));
         });
