@@ -28,6 +28,10 @@ public class NotificationDbContext(DbContextOptions<NotificationDbContext> optio
             entity.Property(n => n.Body)
                 .IsRequired();
 
+            entity.Property(n => n.Priority)
+                .HasMaxLength(32)
+                .HasDefaultValue("high");
+
             entity.Property(n => n.Type)
                 .HasConversion<string>()
                 .HasMaxLength(16)

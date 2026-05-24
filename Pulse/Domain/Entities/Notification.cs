@@ -8,6 +8,7 @@ namespace Domain.Entities
         public string Recipient { get; private set; } = default!;
         public string Subject { get; private set; } = default!;
         public string Body { get; private set; } = default!;
+        public string Priority { get; private set; } = "high";
         public NotificationTypeEnum Type { get; private set; }
         public NotificationStatusEnum Status { get; private set; } = NotificationStatusEnum.Pending;
         public DateTime CreatedAt { get; private set; } = DateTime.UtcNow;
@@ -16,8 +17,17 @@ namespace Domain.Entities
 
         public bool IsDispatched { get; private set; }
 
-        public static Notification Create(string recipient, string subject, string body, NotificationTypeEnum type)
-            => new() { Recipient = recipient, Subject = subject, Body = body, Type = type };
+        public static Notification Create(
+            string recipient, string subject, string body,
+            NotificationTypeEnum type, string priority = "high")
+            => new()
+            {
+                Recipient = recipient,
+                Subject   = subject,
+                Body      = body,
+                Type      = type,
+                Priority  = priority
+            };
 
         public void MarkAsProcessed()
         {

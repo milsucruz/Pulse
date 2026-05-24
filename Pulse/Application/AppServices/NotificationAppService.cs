@@ -26,9 +26,10 @@ namespace Application.AppServices
         {
             var notification = Notification.Create(
                 recipient: command.Recipient,
-                subject: command.Subject,
-                body: command.Body,
-                type: command.Type);
+                subject:   command.Subject,
+                body:      command.Body,
+                type:      command.Type,
+                priority:  command.Priority);
 
             await notificationRepository.AddAsync(notification, cancellationToken);
             await notificationRepository.SaveChangesAsync(cancellationToken);
