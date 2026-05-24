@@ -31,6 +31,7 @@ namespace Domain.Entities
 
         public void MarkAsProcessed()
         {
+            if (Status == NotificationStatusEnum.Sent) return;
             if (Status != NotificationStatusEnum.Pending)
                 throw new InvalidOperationException($"Cannot transition to Sent from status {Status}.");
             (Status, ProcessedAt) = (NotificationStatusEnum.Sent, DateTime.UtcNow);

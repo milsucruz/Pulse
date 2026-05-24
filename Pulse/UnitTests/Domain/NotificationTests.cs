@@ -56,10 +56,23 @@ public class NotificationTests
     }
 
     [Fact]
-    public void MarkAsProcessed_WhenAlreadySent_Throws()
+    public void MarkAsProcessed_WhenAlreadySent_IsIdempotent()
     {
         var notification = Notification.Create("user@test.com", "Subject", "Body", NotificationTypeEnum.Email);
         notification.MarkAsProcessed();
+        var firstProcessedAt = notification.ProcessedAt;
+
+        notification.MarkAsProcessed();
+
+        Assert.Equal(NotificationStatusEnum.Sent, notification.Status);
+        Assert.Equal(firstProcessedAt, notification.ProcessedAt);
+    }
+
+    [Fact]
+    public void MarkAsProcessed_WhenFailed_Throws()
+    {
+        var notification = Notification.Create("user@test.com", "Subject", "Body", NotificationTypeEnum.Email);
+        notification.MarkAsFailed("error");
 
         Assert.Throws<InvalidOperationException>(() => notification.MarkAsProcessed());
     }
