@@ -15,6 +15,7 @@ namespace Api.DTOs.Requests
         public required string Body { get; set; }
 
         [Required]
+        [EnumDataType(typeof(NotificationTypeEnum))]
         public NotificationTypeEnum? Type { get; set; }
 
         [AllowedValues("low", "medium", "high")]
