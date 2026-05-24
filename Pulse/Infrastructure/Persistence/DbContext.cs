@@ -1,6 +1,7 @@
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using Microsoft.Extensions.Configuration;
 
 namespace Infrastructure.Persistence;
 
@@ -65,9 +66,18 @@ public class NotificationDbContextFactory : IDesignTimeDbContextFactory<Notifica
 {
     public NotificationDbContext CreateDbContext(string[] args)
     {
-        var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__Default")
+        var config = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appsettings.json", optional: true)
+            .AddJsonFile("appsettings.Development.json", optional: true)
+            .AddEnvironmentVariables()
+            .Build();
+
+        var connectionString =
+            config.GetConnectionString("Default")
+            ?? Environment.GetEnvironmentVariable("ConnectionStrings__Default")
             ?? throw new InvalidOperationException(
-                "Set the ConnectionStrings__Default environment variable before running EF migrations.");
+                "Connection string 'Default' not found in appsettings or environment variables.");
 
         var options = new DbContextOptionsBuilder<NotificationDbContext>()
             .UseSqlServer(connectionString)
