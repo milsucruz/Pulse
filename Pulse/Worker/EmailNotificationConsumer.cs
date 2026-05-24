@@ -1,3 +1,4 @@
+using Application.Interfaces;
 using Infrastructure.Messaging;
 using Infrastructure.Senders;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,6 +17,7 @@ public class EmailNotificationConsumer(
     IOptions<RabbitMqConfiguration> config,
     [FromKeyedServices("email")] INotificationSender sender,
     ResiliencePipelineProvider<string> pipelineProvider,
+    IServiceScopeFactory scopeFactory,
     ILogger<EmailNotificationConsumer> logger) : BackgroundService
 {
     private const string QueueName = "email.queue";
@@ -91,6 +93,24 @@ public class EmailNotificationConsumer(
             }, cancellationToken);
 
             await channel.BasicAckAsync(ea.DeliveryTag, multiple: false);
+
+            try
+            {
+                using var scope = scopeFactory.CreateScope();
+                var repository = scope.ServiceProvider.GetRequiredService<INotificationRepository>();
+                var notification = await repository.GetByIdAsync(message.NotificationId, cancellationToken);
+                if (notification is not null)
+                {
+                    notification.MarkAsProcessed();
+                    await repository.SaveChangesAsync(cancellationToken);
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex,
+                    "Failed to update notification status for {NotificationId}. Message was already ACKed.",
+                    message.NotificationId);
+            }
 
             logger.LogInformation(
                 "Notification {NotificationId} processed successfully",
